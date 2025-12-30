@@ -25,30 +25,33 @@ if upload_image:
     image_bytes = upload_image.getvalue()
     image = Image.open(io.BytesIO(image_bytes))
     st.image(image, caption= 'Uploaded image', use_container_width=True)
-
-    image_bytes = upload_image.read()
     image_base64 = image_to_base64(image_bytes)
     mime_type = upload_image.type
 
     with st.spinner("Analysing Image..."):
         response = client.responses.create(
-            model = "gpt-4.1-mini",
-            input = [
-                {
-                    'role': 'user',
-                    'content': [
-                        {
-                        'type': 'input_text',
-                        'text': 'Identify all visible food ingredients in this image'
-                        'Return ONLY in valid JSON format and NOTHING ELSE. Make sure to return JUST JSON and follow the given format:' '{"ingredients": ["item1", "item2"]}'
-                        },
-                        {
-                            'type': 'input_image',
-                            "image_url": f"data:{mime_type};base64,{image_base64}"
-                        }
-                    ]
-                }
-            ]
+        model="gpt-4.1-mini",
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": (
+                            "Identify all visible food ingredients in this image. "
+                            'Return ONLY valid JSON like: {"ingredients": ["item1", "item2"]}.'
+                        ),
+                    },
+                    {
+                        "type": "input_image",
+                        "image_url": f"data:{mime_type};base64,{image_base64}",
+                    },
+                ],
+            }
+        ],
+        text={
+            "format": {"type": "json_object"}
+            },
         )
 
         raw_output = response.output_text
@@ -62,6 +65,11 @@ if upload_image:
 
     st.subheader('Ingredients Detected')
     st.write(ingredients)
+
+    if not ingredients:
+        st.warning("No ingredients detected to generate recipes from.")
+        st.stop()
+
 
     
     st.divider()
@@ -86,7 +94,7 @@ if upload_image:
 
         Return ONLY valid JSON in this format(STRICT):
         {{
-        'recipes': [
+        "recipes": [
             {{
                 "name": "Recipe Name",
                 "ingredients_used": ["ingredient1", "ingredient2"],
@@ -98,9 +106,10 @@ if upload_image:
 
         with st.spinner("Generating Recipes..."):
             recipe_response = client.responses.create(
-                model = 'gpt-4.1-mini',
-                input = recipe_prompt
-            )
+            model="gpt-4.1-mini",
+            input=recipe_prompt,
+            text={"format": {"type": "json_object"}},
+        )
 
             recipe_output = recipe_response.output[0].content[0].text
 
@@ -113,7 +122,7 @@ if upload_image:
             st.subheader('Recipe Recommendations')
 
             for recipe in recipe_data["recipes"]:
-                st.markdown(f"# {recipe["name"]}")
+                st.markdown(f'# {recipe["name"]}')
                 st.markdown("Ingredients Used:")
                 st.write(recipe["ingredients_used"])
                 st.markdown("***Steps***")

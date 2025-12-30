@@ -40,7 +40,7 @@ if upload_image:
                         {
                         'type': 'input_text',
                         'text': 'Identify all visible food ingredients in this image'
-                        'Return only in valid JSON format:' '{"ingredients": ["item1", "item2"]}'
+                        'Return ONLY in valid JSON format and NOTHING ELSE(VERY STRICT):' '{"ingredients": ["item1", "item2"]}'
                         },
                         {
                             'type': 'input_image',
